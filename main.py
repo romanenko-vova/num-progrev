@@ -4,7 +4,7 @@ import os
 
 import dotenv
 from creating_bd import creating_db
-from handlers import GET_DATE, GET_MINUSES, start, get_date, minuses
+from handlers import GET_DATE, GET_MINUSES, GET_MONEY_CODE, start, get_date, minuses, get_money_code
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -43,6 +43,9 @@ if __name__ == "__main__":
             GET_MINUSES: [
                 MessageHandler(filters.TEXT, minuses),
             ],
+            GET_MONEY_CODE: [
+                MessageHandler(filters.TEXT, get_money_code),
+            ]
         },
         fallbacks=[],
     )

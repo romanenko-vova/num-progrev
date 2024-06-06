@@ -3,8 +3,9 @@ import logging
 import os
 
 import dotenv
-from creating_bd import add_user, add_bithday_date, add_minuses
-from telegram import Update, ReplyKeyboardMarkup
+from texts import send_pocents_message_dict, affirmative_message_dict, pre_buy_message_dict
+from creating_bd import add_user, add_bithday_date, add_minuses, calculate_30_procents, add_arkans
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -20,7 +21,7 @@ logging.basicConfig(
 # Создание объекта logger
 logger = logging.getLogger(__name__)
 
-GET_DATE, GET_MINUSES = range(1, 3)
+GET_DATE, GET_MINUSES, GET_MONEY_CODE = range(1, 4)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,4 +71,53 @@ async def minuses(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"Спасибо, {update.effective_user.full_name}!",
+    )
+    return send_procents(update, context)
+
+async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    dict_key = await calculate_30_procents(user_id)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=send_pocents_message_dict[dict_key],
+    )
+    return affirmative_message(update, context)
+
+async def affirmative_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [["Да"]]
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=affirmative_message_dict[1]
+    )
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=affirmative_message_dict[0],
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=True,
+            selective=True,
+        )
+    )
+    return GET_MONEY_CODE
+
+async def get_money_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_message.text == "Да":
+        pass
+    return pre_buy_message(update, context)
+
+async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("Оплата через ЮКасса", url="ССЫЛКА_ДЛЯ_ОПЛАТЫ")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=pre_buy_message_dict[0],
+    )
+    asyncio.sleep(1)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=pre_buy_message_dict[1],
+        reply_markup=reply_markup
     )
