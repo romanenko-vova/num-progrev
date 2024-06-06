@@ -4,7 +4,15 @@ import os
 
 import dotenv
 from creating_bd import creating_db
-from handlers import GET_DATE, GET_MINUSES, GET_MONEY_CODE, start, get_date, minuses, get_money_code
+from handlers import (
+    GET_DATE,
+    GET_MINUSES,
+    GET_MONEY_CODE,
+    start,
+    get_date,
+    minuses,
+    get_money_code,
+)
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -23,7 +31,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
-
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
@@ -45,9 +52,10 @@ if __name__ == "__main__":
             ],
             GET_MONEY_CODE: [
                 MessageHandler(filters.TEXT, get_money_code),
-            ]
+            ],
         },
         fallbacks=[],
     )
+    application.add_handler(conv_handler)
 
     application.run_polling()
