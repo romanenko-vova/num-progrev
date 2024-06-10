@@ -36,10 +36,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-if __name__ == "__main__":
+def main():
     date_regex = "^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[012])\.\d{4}$"
     application = ApplicationBuilder().token(os.getenv("TOKEN")).build()
-    asyncio.run(creating_db())
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -57,5 +56,11 @@ if __name__ == "__main__":
         fallbacks=[],
     )
     application.add_handler(conv_handler)
+    
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-    application.run_polling()
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(creating_db())
+    main()

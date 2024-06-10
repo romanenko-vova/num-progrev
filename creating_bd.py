@@ -15,7 +15,7 @@ async def creating_db():
     await db.close()
 
 
-async def add_user(id_tg, status, arkans, username, minuses, bithday_date):
+async def add_user(id_tg, status, username):
     db = await aiosqlite.connect('num_bot.db')
     await db.execute('''INSERT INTO users (id_tg, status, username) VALUES (?, ?, ?)''', (id_tg, status, username))
     await db.commit()

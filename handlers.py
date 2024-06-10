@@ -7,6 +7,7 @@ from texts import (
     send_pocents_message_dict,
     affirmative_message_dict,
     pre_buy_message_dict,
+    arkans_dict
 )
 from creating_bd import (
     add_user,
@@ -31,6 +32,7 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
 )
+from telegram.constants import ParseMode
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -69,10 +71,11 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(file_path, "rb") as file:
             await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file)
         arkans_flat, unique_arkans = await make_arkans_flat_and_calc_unique(arkans)
+        arkans_flat = sorted(list(set(arkans_flat)))
         for arkan in arkans_flat:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=f"{arkan} Жестко",
+                text=f"{arkans_dict[arkan]}",
             )
             asyncio.sleep(2)
 
@@ -84,9 +87,11 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 resize_keyboard=True,
                 one_time_keyboard=True,
                 selective=True,
+                parse_mod = ParseMode
             ),
         )
         return GET_MINUSES
+    
     except Exception as e:
         logger.error(f"Произошла ошибка: {e}")
         await context.bot.send_message(
@@ -103,7 +108,7 @@ async def minuses(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=f"Спасибо, {update.effective_user.full_name}!",
     )
-    return send_procents(update, context)
+    await send_procents(update, context)
 
 
 async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -113,7 +118,7 @@ async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=send_pocents_message_dict[dict_key],
     )
-    return affirmative_message(update, context)
+    await affirmative_message(update, context)
 
 
 async def affirmative_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
