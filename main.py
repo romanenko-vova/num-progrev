@@ -14,6 +14,7 @@ from handlers import (
     minuses,
     get_money_code,
     admin_choice,
+    callback_handler
 )
 from telegram import Update
 from telegram.ext import (
@@ -22,6 +23,7 @@ from telegram.ext import (
     ConversationHandler,
     MessageHandler,
     filters,
+    CallbackQueryHandler,
 )
 
 
@@ -60,7 +62,7 @@ def main():
         fallbacks=[],
     )
     application.add_handler(conv_handler)
-    
+    application.add_handler(CallbackQueryHandler(callback_handler))
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
