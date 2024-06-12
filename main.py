@@ -8,16 +8,17 @@ from handlers import (
     GET_DATE,
     GET_MINUSES,
     GET_MONEY_CODE,
+    ADMIN_START,
     start,
     get_date,
     minuses,
     get_money_code,
+    admin_choice,
 )
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
-    ContextTypes,
     ConversationHandler,
     MessageHandler,
     filters,
@@ -51,6 +52,9 @@ def main():
             ],
             GET_MONEY_CODE: [
                 MessageHandler(filters.TEXT, get_money_code),
+            ],
+            ADMIN_START: [
+                MessageHandler(filters.TEXT, admin_choice),
             ],
         },
         fallbacks=[],

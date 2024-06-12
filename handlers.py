@@ -15,6 +15,7 @@ from creating_bd import (
     add_minuses,
     calculate_30_procents,
     add_arkans,
+    get_users_list
 )
 from triangle import (
     calc_money_code,
@@ -42,23 +43,38 @@ logging.basicConfig(
 # Создание объекта logger
 logger = logging.getLogger(__name__)
 
-GET_DATE, GET_MINUSES, GET_MONEY_CODE = range(1, 4)
+GET_DATE, GET_MINUSES, GET_MONEY_CODE, ADMIN_START = range(1, 5)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [["Отправка сообщений с рассылкой", "Получить список юзеров"],["Калькулятор конверсии"]]
     user_id = update.effective_user.id
     user_name = update.effective_user.full_name
-    await add_user(user_id, 1, user_name)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"Привет, {user_name}!",
-    )
-    asyncio.sleep(1)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Введите дату в формате ДД.ММ.ГГГГ",
-    )
-    return GET_DATE
+    if update.effective_user.username == 'yur_numer':
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Привет, {user_name}!",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=keyboard,
+                resize_keyboard=True,
+                one_time_keyboard=True,
+                selective=True,
+            ),
+        )
+        return ADMIN_START
+    else:
+        await add_user(user_id, 1, user_name)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Привет, {user_name}!",
+        )
+        asyncio.sleep(1)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Введите дату в формате ДД.ММ.ГГГГ",
+        )
+        return GET_DATE
+
 
 
 async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -97,7 +113,7 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Извините, произошла ошибка."
         )
-        return get_date(update, context)
+        return await get_date(update, context)
 
 
 async def minuses(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -108,7 +124,7 @@ async def minuses(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=f"Спасибо, {update.effective_user.full_name}!",
     )
-    await send_procents(update, context)
+    return await send_procents(update, context)
 
 
 async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -118,7 +134,7 @@ async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=send_pocents_message_dict[dict_key],
     )
-    await affirmative_message(update, context)
+    return await affirmative_message(update, context)
 
 
 async def affirmative_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -142,7 +158,7 @@ async def affirmative_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def get_money_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_message.text == "Да":
         pass
-    return pre_buy_message(update, context)
+    return await pre_buy_message(update, context)
 
 
 async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -158,3 +174,43 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=pre_buy_message_dict[1],
         reply_markup=reply_markup,
     )
+
+async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_message.text == "Отправка сообщений с рассылкой":
+        message_text = update.effective_message.text
+        users_list = await get_users_list()
+        for user_id, _ in users_list:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=message_text,
+            )
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Сообщение было отправлено всем пользователям",
+        )
+        return await start(update, context)
+    elif update.effective_message.text == "Получить список юзеров":
+        users_list = await get_users_list()
+        last_40_users = users_list[-40:]  
+        for user_id, username in last_40_users:
+            message = f"имя пользователя: {username}, ID: {user_id}"
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message
+                )
+        remaining_users = users_list[:-40]  
+        with open("users_list.txt", "w", encoding="utf-8") as file:
+            for user_id, username in remaining_users:
+                file.write(f"ID: {user_id}, Username: {username}\n")
+        with open("users_list.txt", "rb") as file:
+            await context.bot.send_document(chat_id=update.effective_chat.id, document=file)
+        return await start(update, context)
+    elif update.effective_message.text == "Калькулятор конверсии":
+        pass 
+        return start(update, context)
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,     
+            text="Пожалуйста, выберите один из вариантов",
+        )
+        return start(update, context)

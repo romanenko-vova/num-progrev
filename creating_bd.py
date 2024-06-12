@@ -55,3 +55,9 @@ async def calculate_30_procents(id_tg):
     elif arkans < minuses:
         return 0
 
+async def get_users_list():
+    db = await aiosqlite.connect('num_bot.db')
+    cursor = await db.execute('''SELECT id, username FROM users ORDER BY id ASC''')
+    users_list = await cursor.fetchall()
+    await db.close()
+    return users_list
