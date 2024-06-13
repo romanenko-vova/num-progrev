@@ -50,7 +50,7 @@ def main():
                 MessageHandler(filters.Regex(date_regex), get_date),
             ],
             GET_MINUSES: [
-                MessageHandler(filters.TEXT, minuses),
+                CallbackQueryHandler(minuses)
             ],
             GET_MONEY_CODE: [
                 MessageHandler(filters.TEXT, get_money_code),
