@@ -82,19 +82,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [["1", "2", "3"], ["4", "5", "6"]]
+    inline_keyboard = [
+        [
+            InlineKeyboardButton("1", callback_data="1min"),
+            InlineKeyboardButton("2", callback_data="2min"),
+            InlineKeyboardButton("3", callback_data="3min"),
+            InlineKeyboardButton("4", callback_data="4min"),
+            InlineKeyboardButton("5", callback_data="5min"),
+            InlineKeyboardButton("6", callback_data="6min"),
+        ]
+    ]
     user_input = update.effective_message.text
     user_id = update.effective_user.id
     await add_bithday_date(user_id, user_input)
     arkans, file_path = await create_triangle_image(user_id, user_input)
     with open(file_path, "rb") as file:
         await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file)
-        
+
     arkans_flat, unique_arkans = await make_arkans_flat_and_calc_unique(arkans)
     arkans_flat = sorted(list(set(arkans_flat)))
-    
+
     await add_arkans(user_id, unique_arkans)
-    
+
     for arkan in arkans_flat:
         mess = text_parse_mode(arkans_dict[arkan])
         with open(f"./imgs/{arkan}.jpg", "rb") as file:
@@ -110,24 +119,25 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Введите количество минусов",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True,
-            one_time_keyboard=True,
-            selective=True,
-        ),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard),
     )
     return GET_MINUSES
 
 
 async def minuses(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    user_input = update.effective_message.text
-    await add_minuses(user_id, user_input)
+    query = update.callback_query
+    
+    await query.answer()
+    
+    num_minuses = int(query.data[0])
+    await add_minuses(user_id, num_minuses)
+    
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"Спасибо, {update.effective_user.full_name}!",
     )
+    
     return await send_procents(update, context)
 
 
