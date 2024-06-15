@@ -225,7 +225,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "pay_now":
         # context.job_queue.run_once()
         pass
-
+ 
 async def confirmation_payment(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
     keyboard = [[InlineKeyboardButton("Подтвердить оплату", callback_data="confirmation_payment")]]
