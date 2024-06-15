@@ -78,6 +78,12 @@ async def pre_buy_status(id_tg, status):
     await db.execute('''UPDATE users SET status = ? WHERE id_tg = ?''', (status, id_tg))
     await db.commit()
     await db.close()
+    
+async def update_status(id_tg, status):
+    db = await aiosqlite.connect('num_bot.db')
+    await db.execute('''UPDATE users SET status = ? WHERE id_tg = ?''', (status, id_tg))
+    await db.commit()
+    await db.close()
 
 async def conversion_from_start_to_minuses():
     db = await aiosqlite.connect('num_bot.db')

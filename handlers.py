@@ -6,6 +6,7 @@ import dotenv
 from texts import (
     hello_message,
     hello_message2,
+    before_arkan_message,
     send_procents_message_dict,
     affirmative_message_dict,
     pre_buy_message_dict,
@@ -18,6 +19,7 @@ from creating_bd import (
     calculate_30_procents,
     add_arkans,
     get_users_list,
+    update_status,
     pre_buy_status,
     conversion_from_minuses_to_payment,
     conversion_from_start_to_minuses,
@@ -52,7 +54,15 @@ logging.basicConfig(
 # Создание объекта logger
 logger = logging.getLogger(__name__)
 
-GET_DATE, GET_MINUSES, GET_MONEY_CODE, ADMIN_START, BUY = range(1, 6)
+(
+    GET_DATE,
+    READY_ARKANES,
+    GET_MINUSES,
+    GET_MONEY_CODE,
+    PREPARE_BUY_MESSAGE,
+    BUY,
+    ADMIN_START,
+) = range(1, 8)
 
 admin_list = ["yur_numer", "fromanenko_vova"]
 TEST = True
@@ -82,13 +92,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ADMIN_START
     else:
-        await add_user(user_id, 0, username)
+        status = 1
+        await add_user(user_id, status, username)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text_parse_mode(hello_message),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
+
         await asyncio.sleep(1)
+
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text_parse_mode(hello_message2),
@@ -98,16 +111,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    inline_keyboard = [
-        [
-            InlineKeyboardButton("1", callback_data="1min"),
-            InlineKeyboardButton("2", callback_data="2min"),
-            InlineKeyboardButton("3", callback_data="3min"),
-            InlineKeyboardButton("4", callback_data="4min"),
-            InlineKeyboardButton("5", callback_data="5min"),
-            InlineKeyboardButton("6", callback_data="6min"),
-        ]
-    ]
     user_input = update.effective_message.text
     user_id = update.effective_user.id
     await add_bithday_date(user_id, user_input)
@@ -121,9 +124,43 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     arkans_flat, unique_arkans = await make_arkans_flat_and_calc_unique(arkans)
     arkans_flat = sorted(list(set(arkans_flat)))
 
+    context.user_data["arkanes"] = arkans_flat
     await add_arkans(user_id, unique_arkans)
 
-    for arkan in arkans_flat:
+    inline_keyboard = [
+        [InlineKeyboardButton("Готов считать", callback_data="ready_arkanes")]
+    ]
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=text_parse_mode(before_arkan_message),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+    status = 2
+    await update_status(update.effective_user.id, status)
+
+    return READY_ARKANES
+
+
+async def send_arkanes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    inline_keyboard = [
+        [
+            InlineKeyboardButton("1", callback_data="1min"),
+            InlineKeyboardButton("2", callback_data="2min"),
+            InlineKeyboardButton("3", callback_data="3min"),
+            InlineKeyboardButton("4", callback_data="4min"),
+            InlineKeyboardButton("5", callback_data="5min"),
+            InlineKeyboardButton("6", callback_data="6min"),
+        ]
+    ]
+
+    arkanes = context.user_data["arkanes"]
+
+    for arkan in arkanes:
         mess = text_parse_mode(arkans_dict[arkan])
         with open(f"./imgs/{arkan}.jpg", "rb") as file:
             await context.bot.send_photo(
@@ -137,9 +174,11 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Введите количество минусов",
+        text="Сколько у вас минусов?",
         reply_markup=InlineKeyboardMarkup(inline_keyboard),
     )
+    status = 3
+    await update_status(update.effective_user.id, status)
     return GET_MINUSES
 
 
@@ -149,12 +188,8 @@ async def minuses(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.answer()
     num_minuses = int(query.data[0])
-    status = 1
+    status = 4
     await add_minuses(user_id, num_minuses, status)
-    # await context.bot.send_message(
-    #     chat_id=update.effective_chat.id,
-    #     text=f"Спасибо, {update.effective_user.full_name}!",
-    # )
     return await send_procents(update, context)
 
 
@@ -200,23 +235,35 @@ async def get_money_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=f"Ваш денежный код: {money_code}",
     )
-    await pre_buy_message(update, context)
-    return BUY
-
-
-async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton("Оплатить сейчас", callback_data="pay_now")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    status = 5
+    await update_status(update.effective_user.id, status)
+    
+    keyboard = [[InlineKeyboardButton('Как это сделать?', callback_data='ready_to_buy')]]
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=pre_buy_message_dict[0],
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
-    await asyncio.sleep(1)
+    return PREPARE_BUY_MESSAGE
+
+async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    status = 6
+    await update_status(update.effective_user.id, status)
+    
+    keyboard = [[InlineKeyboardButton("Оплатить сейчас", callback_data="pay_now")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # await asyncio.sleep(1)
+    
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=pre_buy_message_dict[1],
         reply_markup=reply_markup,
     )
+    return BUY
 
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -226,15 +273,23 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # context.job_queue.run_once()
         pass
 
+
 async def confirmation_payment(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
-    keyboard = [[InlineKeyboardButton("Подтвердить оплату", callback_data="confirmation_payment")]]
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "Подтвердить оплату", callback_data="confirmation_payment"
+            )
+        ]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
         chat_id=job.chat_id,
         text=pre_buy_message_dict[1],
         reply_markup=reply_markup,
     )
+
 
 async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_message.text == "Отправка сообщений с рассылкой":

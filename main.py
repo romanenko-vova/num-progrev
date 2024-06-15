@@ -6,14 +6,18 @@ import dotenv
 from creating_bd import creating_db
 from handlers import (
     GET_DATE,
+    READY_ARKANES,
     GET_MINUSES,
     GET_MONEY_CODE,
-    ADMIN_START,
+    PREPARE_BUY_MESSAGE,
     BUY,
+    ADMIN_START,
     start,
     get_date,
+    send_arkanes,
     minuses,
     get_money_code,
+    pre_buy_message,
     admin_choice,
     callback_handler,
 )
@@ -52,10 +56,12 @@ def main():
             GET_DATE: [
                 MessageHandler(filters.Regex(date_regex), get_date),
             ],
+            READY_ARKANES: [CallbackQueryHandler(send_arkanes)],
             GET_MINUSES: [CallbackQueryHandler(minuses)],
             GET_MONEY_CODE: [
                 CallbackQueryHandler(get_money_code),
             ],
+            PREPARE_BUY_MESSAGE: [CallbackQueryHandler(pre_buy_message)],
             BUY: [CallbackQueryHandler(callback_handler)],
             ADMIN_START: [
                 MessageHandler(filters.TEXT, admin_choice),
