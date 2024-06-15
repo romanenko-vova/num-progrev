@@ -9,7 +9,8 @@ async def creating_db():
                     arkans INTEGER,
                     username TEXT,
                     minuses INTEGER,
-                    bithday_date TEXT
+                    bithday_date TEXT,
+                    payed INTEGER default 0
                     )''')
     await db.commit()
     await db.close()
@@ -17,8 +18,11 @@ async def creating_db():
 
 async def add_user(id_tg, status, username):
     db = await aiosqlite.connect('num_bot.db')
-    await db.execute('''INSERT INTO users (id_tg, status, username) VALUES (?, ?, ?)''', (id_tg, status, username))
-    await db.commit()
+    user = await db.execute('''SELECT id FROM users WHERE id_tg = ?''', (id_tg,))
+    user = await user.fetchone()
+    if not user:
+        await db.execute('''INSERT INTO users (id_tg, status, username) VALUES (?, ?, ?)''', (id_tg, status, username))
+        await db.commit()
     await db.close()
 
 async def add_bithday_date(id_tg, bithday_date):
@@ -26,7 +30,14 @@ async def add_bithday_date(id_tg, bithday_date):
     await db.execute('''UPDATE users SET bithday_date = ? WHERE id_tg = ?''', (bithday_date, id_tg))
     await db.commit()
     await db.close()
-
+    
+async def get_bithday_date(id_tg):
+    db = await aiosqlite.connect('num_bot.db')
+    result = await db.execute('''SELECT birthday_date FROM users WHERE id_tg = ?''', (id_tg,))
+    birthday_date = await result.fetchone()[0]
+    await db.close()
+    return birthday_date
+    
 async def add_minuses(id_tg, minuses, status):
     db = await aiosqlite.connect('num_bot.db')
     await db.execute('''UPDATE users SET minuses = ?, status = ? WHERE id_tg = ?''', (minuses, status, id_tg))

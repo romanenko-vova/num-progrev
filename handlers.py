@@ -4,7 +4,9 @@ import os
 
 import dotenv
 from texts import (
-    send_pocents_message_dict,
+    hello_message,
+    hello_message2,
+    send_procents_message_dict,
     affirmative_message_dict,
     pre_buy_message_dict,
     arkans_dict,
@@ -20,6 +22,7 @@ from creating_bd import (
     conversion_from_minuses_to_payment,
     conversion_from_start_to_minuses,
     overall_conversion_to_payment,
+    get_bithday_date,
 )
 from triangle import (
     calc_money_code,
@@ -49,20 +52,27 @@ logging.basicConfig(
 # Создание объекта logger
 logger = logging.getLogger(__name__)
 
-GET_DATE, GET_MINUSES, GET_MONEY_CODE, ADMIN_START = range(1, 5)
+GET_DATE, GET_MINUSES, GET_MONEY_CODE, ADMIN_START, BUY = range(1, 6)
+
+admin_list = ["yur_numer", "fromanenko_vova"]
+TEST = True
+if TEST:
+    arkans_delay = 2
+else:
+    arkans_delay = 60
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        ["Отправка сообщений с рассылкой", "Получить список юзеров"],
+        ["Отправка сообщений с рассылкой", "Получить список пользователей"],
         ["Калькулятор конверсии"],
     ]
     user_id = update.effective_user.id
-    user_name = update.effective_user.full_name
-    if update.effective_user.username == "yur_numer":
+    username = update.effective_user.username
+    if update.effective_user.username in admin_list:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f"Привет, {user_name}!",
+            text="Вы попали в панель администратора\nВыберите действие:",
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=keyboard,
                 resize_keyboard=True,
@@ -72,15 +82,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ADMIN_START
     else:
-        await add_user(user_id, 0, user_name)
+        await add_user(user_id, 0, username)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f"Привет, {user_name}!",
+            text=text_parse_mode(hello_message),
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
         await asyncio.sleep(1)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Введите дату в формате ДД.ММ.ГГГГ",
+            text=text_parse_mode(hello_message2),
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
         return GET_DATE
 
@@ -99,7 +111,10 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.effective_message.text
     user_id = update.effective_user.id
     await add_bithday_date(user_id, user_input)
+    context.user_data["birthday_date"] = update.effective_message.text
+
     arkans, file_path = await create_triangle_image(user_id, user_input)
+
     with open(file_path, "rb") as file:
         await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file)
 
@@ -118,7 +133,7 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode=ParseMode.MARKDOWN_V2,
             )
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(arkans_delay)
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -131,16 +146,15 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def minuses(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     query = update.callback_query
-    
+
     await query.answer()
     num_minuses = int(query.data[0])
     status = 1
     await add_minuses(user_id, num_minuses, status)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"Спасибо, {update.effective_user.full_name}!",
-    )
-    
+    # await context.bot.send_message(
+    #     chat_id=update.effective_chat.id,
+    #     text=f"Спасибо, {update.effective_user.full_name}!",
+    # )
     return await send_procents(update, context)
 
 
@@ -149,42 +163,45 @@ async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
     dict_key = await calculate_30_procents(user_id)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=send_pocents_message_dict[dict_key],
+        text=text_parse_mode(send_procents_message_dict[dict_key]),
+        parse_mode=ParseMode.MARKDOWN_V2,
     )
+    await asyncio.sleep(2)
     return await affirmative_message(update, context)
 
 
 async def affirmative_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [["Да"]]
+    keyboard = [[InlineKeyboardButton("Да", callback_data="ready")]]
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text=affirmative_message_dict[1]
     )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=affirmative_message_dict[0],
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True,
-            one_time_keyboard=True,
-            selective=True,
+        text=text_parse_mode(affirmative_message_dict[0]),
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=keyboard,
         ),
+        parse_mode=ParseMode.MARKDOWN_V2,
     )
     return GET_MONEY_CODE
 
 
-
-
-
 async def get_money_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_message.text == "Да":
-        pass
-    else:
-        return await affirmative_message(update, context)
-    return await pre_buy_message(update, context)
+    query = update.callback_query
+    await query.answer()
 
+    birthday_date = context.user_data.get("birthday_date")
+    if not birthday_date:
+        birthday_date = await get_bithday_date(update.effective_user.id)
 
+    money_code = calc_money_code(birthday_date)
 
-
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Ваш денежный код: {money_code}",
+    )
+    await pre_buy_message(update, context)
+    return BUY
 
 
 async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -194,19 +211,30 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=pre_buy_message_dict[0],
     )
-    asyncio.sleep(1)
+    await asyncio.sleep(1)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=pre_buy_message_dict[1],
         reply_markup=reply_markup,
     )
 
+
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer() 
+    await query.answer()
     if query.data == "pay_now":
-        await your_payment_function(update, context)
+        # context.job_queue.run_once()
+        pass
 
+async def confirmation_payment(context: ContextTypes.DEFAULT_TYPE):
+    job = context.job
+    keyboard = [[InlineKeyboardButton("Подтвердить оплату", callback_data="confirmation_payment")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await context.bot.send_message(
+        chat_id=job.chat_id,
+        text=pre_buy_message_dict[1],
+        reply_markup=reply_markup,
+    )
 
 async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_message.text == "Отправка сообщений с рассылкой":
@@ -223,18 +251,16 @@ async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return await start(update, context)
 
-    elif update.effective_message.text == "Получить список юзеров":
+    elif update.effective_message.text == "Получить список пользователей":
         users_list = await get_users_list()
-        last_40_users = users_list[-40:]
-        for user_id, username in last_40_users:
-            message = f"имя пользователя: {username}, ID: {user_id}"
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, text=message
-            )
-        remaining_users = users_list[:-40]
+        last_40_users = users_list[::-1][:40]
+        message = ""
+        for n, user_data in enumerate(last_40_users):
+            message += f"{n+1}. @{user_data[1]}\n"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
         with open("users_list.txt", "w", encoding="utf-8") as file:
-            for user_id, username in remaining_users:
-                file.write(f"ID: {user_id}, Username: {username}\n")
+            for n, user_data in enumerate(users_list):
+                file.write(f"{n+1}. https://t.me/{user_data[1]}\n")
         with open("users_list.txt", "rb") as file:
             await context.bot.send_document(
                 chat_id=update.effective_chat.id, document=file
