@@ -36,11 +36,12 @@ async def calc_arkans(date):
     return first_row, second_row, third_row
 
 
-async def calc_money_code(date):
+def calc_money_code(date):
     nums_lst = date.split(".")
 
     money_code_lst = []
     for num in nums_lst:
+        num = str(sum([int(x) for x in num]))
         while int(num) > 9:
             num = str(sum([int(x) for x in num]))
         money_code_lst.append(num)
@@ -134,12 +135,12 @@ async def make_arkans_flat_and_calc_unique(arkans) -> tuple[list[int], int]:
     return flat, len(set(flat_set))
 
 if __name__ == "__main__":
-    nums = asyncio.run(calc_arkans("26.11.1999"))
+    # nums = asyncio.run(calc_arkans("26.11.1999"))
 
-    asyncio.run(create_triangle_image(
-        752,
-        "26.11.1999"
-    ))
+    # asyncio.run(create_triangle_image(
+    #     752,
+    #     "26.11.1999"
+    # ))
 
-    print(calc_money_code("26.11.1999"))
-    print(make_arkans_flat_and_calc_unique(([8, 11, 10], [19, 1], [20])))
+    print(calc_money_code("01.01.1999"))
+    # print(make_arkans_flat_and_calc_unique(([8, 11, 10], [19, 1], [20])))

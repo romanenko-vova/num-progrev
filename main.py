@@ -9,12 +9,13 @@ from handlers import (
     GET_MINUSES,
     GET_MONEY_CODE,
     ADMIN_START,
+    BUY,
     start,
     get_date,
     minuses,
     get_money_code,
     admin_choice,
-    callback_handler
+    callback_handler,
 )
 from telegram import Update
 from telegram.ext import (
@@ -39,8 +40,10 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
+
 def main():
-    date_regex = "^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[012])\.\d{4}$"
+    date_regex = r"^(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[012])\.(1|2)\d{3}$|^(0?[1-9]|[12][0-9])\.(0?[1-9]|1[012])\.(1|2)\d{3}$"
+
     application = ApplicationBuilder().token(os.getenv("TOKEN")).build()
 
     conv_handler = ConversationHandler(
@@ -49,20 +52,19 @@ def main():
             GET_DATE: [
                 MessageHandler(filters.Regex(date_regex), get_date),
             ],
-            GET_MINUSES: [
-                CallbackQueryHandler(minuses)
-            ],
+            GET_MINUSES: [CallbackQueryHandler(minuses)],
             GET_MONEY_CODE: [
-                MessageHandler(filters.TEXT, get_money_code),
+                CallbackQueryHandler(get_money_code),
             ],
+            BUY: [CallbackQueryHandler(callback_handler)],
             ADMIN_START: [
                 MessageHandler(filters.TEXT, admin_choice),
             ],
         },
         fallbacks=[],
+        # per_message=True,
     )
     application.add_handler(conv_handler)
-    application.add_handler(CallbackQueryHandler(callback_handler))
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
