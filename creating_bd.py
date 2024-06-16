@@ -15,9 +15,10 @@ async def creating_db():
     await db.commit()
     await db.close()
 
+db_path = './num_bot.db'
 
 async def add_user(id_tg, status, username):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     user = await db.execute('''SELECT id FROM users WHERE id_tg = ?''', (id_tg,))
     user = await user.fetchone()
     if not user:
@@ -26,32 +27,32 @@ async def add_user(id_tg, status, username):
     await db.close()
 
 async def add_bithday_date(id_tg, bithday_date):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     await db.execute('''UPDATE users SET bithday_date = ? WHERE id_tg = ?''', (bithday_date, id_tg))
     await db.commit()
     await db.close()
     
 async def get_bithday_date(id_tg):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     result = await db.execute('''SELECT birthday_date FROM users WHERE id_tg = ?''', (id_tg,))
     birthday_date = await result.fetchone()[0]
     await db.close()
     return birthday_date
     
 async def add_minuses(id_tg, minuses, status):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     await db.execute('''UPDATE users SET minuses = ?, status = ? WHERE id_tg = ?''', (minuses, status, id_tg))
     await db.commit()
     await db.close()
 
 async def add_arkans(id_tg, arkans):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     await db.execute('''UPDATE users SET arkans = ? WHERE id_tg = ?''', (arkans, id_tg))
     await db.commit()
     await db.close()
 
 async def calculate_30_procents(id_tg):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     result = await db.execute('''SELECT arkans FROM users WHERE id_tg = ?''', (id_tg,))
     arkans = await result.fetchone()
     arkans = arkans[0]
@@ -61,65 +62,41 @@ async def calculate_30_procents(id_tg):
     minuses = await minuses.fetchone()
     minuses = minuses[0]
     minuses = int(minuses)
-    if arkans > minuses:
+    if minuses >= arkans:
         return True
-    elif arkans < minuses:
+    else:
         return False
 
 async def get_users_list():
-    db = await aiosqlite.connect('num_bot.db')
-    cursor = await db.execute('''SELECT id, username FROM users ORDER BY id ASC''')
+    db = await aiosqlite.connect(db_path)
+    cursor = await db.execute('''SELECT id, username, id_tg FROM users ORDER BY id ASC''')
     users_list = await cursor.fetchall()
     await db.close()
     return users_list
 
 async def pre_buy_status(id_tg, status):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     await db.execute('''UPDATE users SET status = ? WHERE id_tg = ?''', (status, id_tg))
     await db.commit()
     await db.close()
     
 async def update_status(id_tg, status):
-    db = await aiosqlite.connect('num_bot.db')
+    db = await aiosqlite.connect(db_path)
     await db.execute('''UPDATE users SET status = ? WHERE id_tg = ?''', (status, id_tg))
     await db.commit()
     await db.close()
 
-async def conversion_from_start_to_minuses():
-    db = await aiosqlite.connect('num_bot.db')
-    total_users = await db.execute('''SELECT COUNT(*) FROM users WHERE status >= 0''')
+    
+async def calculate_conversion():
+    db = await aiosqlite.connect(db_path)
+    total_users = await db.execute('''SELECT COUNT(*) FROM users WHERE status >= 1''')
     total_users = await total_users.fetchone()
-    total_users_with_minuses = await db.execute('''SELECT COUNT(*) FROM users WHERE status >= 1''')
-    total_users_with_minuses = await total_users_with_minuses.fetchone()
-    db.close()
-    if total_users[0] > 0:
-        conversion_rate_to_minuses = (total_users_with_minuses[0] / total_users[0]) * 100
-        return conversion_rate_to_minuses
-    else:
-        return 0
-
-async def conversion_from_minuses_to_payment():
-    db = await aiosqlite.connect('num_bot.db')
-    total_users_with_minuses = await db.execute('''SELECT COUNT(*) FROM users WHERE status >= 1''')
-    total_users_with_minuses = await total_users_with_minuses.fetchone()
-    total_users_with_payment = await db.execute('''SELECT COUNT(*) FROM users WHERE status = 2''')
-    total_users_with_payment = await total_users_with_payment.fetchone()
-    db.close()
-    if total_users_with_minuses[0] > 0:
-        conversion_rate_to_payment = (total_users_with_payment[0] / total_users_with_minuses[0]) * 100
-        return conversion_rate_to_payment
-    else:
-        return 0
-
-async def overall_conversion_to_payment():
-    db = await aiosqlite.connect('num_bot.db')
-    total_users = await db.execute('''SELECT COUNT(*) FROM users WHERE status >= 0''')
-    total_users = await total_users.fetchone()
-    total_users_with_payment = await db.execute('''SELECT COUNT(*) FROM users WHERE status = 2''')
-    total_users_with_payment = await total_users_with_payment.fetchone()
-    db.close()
-    if total_users[0] > 0:
-        conversion_rate_after_payment = (total_users_with_payment[0] / total_users[0]) * 100
-        return conversion_rate_after_payment
-    else:
-        return 0
+    total_users = total_users[0]
+    number_users = [total_users]
+    list_statuses = [2,3,4,5,6,7,8,9]
+    for status in list_statuses:
+        total_users_with_status = await db.execute('''SELECT COUNT(*) FROM users WHERE status >= ?''', (status,))
+        total_users_with_status = await total_users_with_status.fetchone()
+        total_users_with_status = total_users_with_status[0]
+        number_users.append(total_users_with_status)
+    return number_users
