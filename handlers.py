@@ -12,6 +12,9 @@ from texts import (
     pre_buy_message_dict,
     arkans_dict,
 )
+
+from payments import yookassa_payment, yookassa_confirmation
+
 from creating_bd import (
     add_user,
     add_bithday_date,
@@ -62,7 +65,8 @@ logger = logging.getLogger(__name__)
     PREPARE_BUY_MESSAGE,
     BUY,
     ADMIN_START,
-) = range(1, 8)
+    CONFIRMATION_PAYMENT,
+) = range(1, 9)
 
 admin_list = ["yur_numer", "fromanenko_vova"]
 TEST = True
@@ -252,8 +256,10 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     status = 6
     await update_status(update.effective_user.id, status)
-    
-    keyboard = [[InlineKeyboardButton("Оплатить сейчас", callback_data="pay_now")]]
+    url = await yookassa_payment()
+    keyboard = [
+        [InlineKeyboardButton("Оплатить", url=url,)],
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     # await asyncio.sleep(1)
@@ -266,15 +272,9 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return BUY
 
 
-async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    if query.data == "pay_now":
-        # context.job_queue.run_once()
-        pass
+    
  
-async def confirmation_payment(context: ContextTypes.DEFAULT_TYPE):
-    job = context.job
+async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
             InlineKeyboardButton(
@@ -284,10 +284,11 @@ async def confirmation_payment(context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
-        chat_id=job.chat_id,
+        chat_id=update.effective_chat.id,
         text=pre_buy_message_dict[1],
         reply_markup=reply_markup,
     )
+    return CONFIRMATION_PAYMENT
 
 
 async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):

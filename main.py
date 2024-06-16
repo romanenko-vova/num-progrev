@@ -4,6 +4,7 @@ import os
 
 import dotenv
 from creating_bd import creating_db
+from payments import yookassa_confirmation
 from handlers import (
     GET_DATE,
     READY_ARKANES,
@@ -12,6 +13,7 @@ from handlers import (
     PREPARE_BUY_MESSAGE,
     BUY,
     ADMIN_START,
+    CONFIRMATION_PAYMENT,
     start,
     get_date,
     send_arkanes,
@@ -19,7 +21,7 @@ from handlers import (
     get_money_code,
     pre_buy_message,
     admin_choice,
-    callback_handler,
+    confirmation_payment,
 )
 from telegram import Update
 from telegram.ext import (
@@ -48,7 +50,7 @@ logger = logging.getLogger(__name__)
 def main():
     date_regex = r"^(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[012])\.(1|2)\d{3}$|^(0?[1-9]|[12][0-9])\.(0?[1-9]|1[012])\.(1|2)\d{3}$"
 
-    application = ApplicationBuilder().token(os.getenv("TOKEN")).build()
+    application = ApplicationBuilder().token("7227890712:AAHu_PD1uaY5Kkh-oK-sgJIwQhs0QbPRkGk").build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -62,10 +64,11 @@ def main():
                 CallbackQueryHandler(get_money_code),
             ],
             PREPARE_BUY_MESSAGE: [CallbackQueryHandler(pre_buy_message)],
-            BUY: [CallbackQueryHandler(callback_handler)],
+            BUY: [CallbackQueryHandler(confirmation_payment)],
             ADMIN_START: [
                 MessageHandler(filters.TEXT, admin_choice),
             ],
+            CONFIRMATION_PAYMENT: [CallbackQueryHandler(yookassa_confirmation)],
         },
         fallbacks=[],
         # per_message=True,

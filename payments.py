@@ -1,36 +1,29 @@
 
+import uuid
+
 from yookassa import Configuration, Payment
-import dotenv
-import os
-import asyncio
-dotenv.load_dotenv()
 
-async def payment():
-    Configuration.account_id = os.getenv("ACCOUNT_ID")
-    Configuration.secret_key = os.getenv("SECRET_KEY")
-
-    payment = Payment.create({
+Configuration.account_id = "349918"
+Configuration.secret_key = "test_wwHRVzc1JTXUJhM5Wh9lV65VCFtc4iG2ryM0bKJ6SUw"
+async def yookassa_payment():
+    payment_process = Payment.create({
         "amount": {
-            "value": "100.00",
+            "value": "2000.00",
             "currency": "RUB"
         },
         "confirmation": {
             "type": "redirect",
-            "return_url": "https://www.example.com/return_url"
+            "return_url": "https://www.e-fliterc.com/product/nx10-10-channel-dsmx-transmitter-only/SPMR10100.html"
         },
         "capture": True,
-        "description": "Заказ №37",
-        "metadata": {
-        "order_id": "37"
-        }
-    })
+        "description": "Заказ №1"
+    }, uuid.uuid4())
 
-    payment_id = payment.id
-    payment_info = Payment.find_one(payment_id)
-    return payment_id, payment_info
-if payment_info.status == 'succeeded':
-    print("Оплата прошла успешно")
-elif payment_info.status == 'pending':
-    print("Оплата в процессе")
-else:
-    print("Оплата не прошла")
+    payment_id = payment_process.id
+    global payment
+    payment = Payment.find_one(payment_id)
+    if payment.confirmation and payment.confirmation.type == "redirect":
+        return payment.confirmation.confirmation_url
+
+async def yookassa_confirmation():
+    print(f"Статус платежа: {payment.status}")
