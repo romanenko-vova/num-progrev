@@ -275,6 +275,8 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
  
 async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
     keyboard = [
         [
             InlineKeyboardButton(
