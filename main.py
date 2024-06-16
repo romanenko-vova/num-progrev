@@ -7,6 +7,7 @@ from creating_bd import creating_db
 from payments import yookassa_confirmation
 from handlers import (
     GET_DATE,
+    READY_TRIANGLE,
     READY_ARKANES,
     GET_MINUSES,
     GET_MONEY_CODE,
@@ -14,14 +15,19 @@ from handlers import (
     BUY,
     ADMIN_START,
     CONFIRMATION_PAYMENT,
+    GET_MAILING_MESSAGE,
+    YOU_SURE,
     start,
     get_date,
+    send_triangle,
     send_arkanes,
     minuses,
     get_money_code,
     pre_buy_message,
     admin_choice,
     confirmation_payment,
+    get_mailing_message,
+    get_confirmation_mailing_message
 )
 from telegram import Update
 from telegram.ext import (
@@ -58,6 +64,7 @@ def main():
             GET_DATE: [
                 MessageHandler(filters.Regex(date_regex), get_date),
             ],
+            READY_TRIANGLE: [CallbackQueryHandler(send_triangle)],
             READY_ARKANES: [CallbackQueryHandler(send_arkanes)],
             GET_MINUSES: [CallbackQueryHandler(minuses)],
             GET_MONEY_CODE: [
@@ -69,6 +76,8 @@ def main():
                 MessageHandler(filters.TEXT, admin_choice),
             ],
             CONFIRMATION_PAYMENT: [CallbackQueryHandler(yookassa_confirmation)],
+            GET_MAILING_MESSAGE:[MessageHandler(filters.TEXT & ~filters.COMMAND, get_mailing_message)],
+            YOU_SURE: [CallbackQueryHandler(get_confirmation_mailing_message)],
         },
         fallbacks=[],
         # per_message=True,
