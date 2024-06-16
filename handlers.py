@@ -241,29 +241,37 @@ async def get_money_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     status = 5
     await update_status(update.effective_user.id, status)
-    
-    keyboard = [[InlineKeyboardButton('Как это сделать?', callback_data='ready_to_buy')]]
+
+    keyboard = [
+        [InlineKeyboardButton("Как это сделать?", callback_data="ready_to_buy")]
+    ]
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=pre_buy_message_dict[0],
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
     return PREPARE_BUY_MESSAGE
+
 
 async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    
+
     status = 6
     await update_status(update.effective_user.id, status)
     url = await yookassa_payment()
     keyboard = [
-        [InlineKeyboardButton("Оплатить", url=url,)],
+        [
+            InlineKeyboardButton(
+                "Оплатить",
+                url=url,
+            )
+        ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
+
     # await asyncio.sleep(1)
-    
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=pre_buy_message_dict[1],
@@ -272,8 +280,6 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return BUY
 
 
-    
- 
 async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
