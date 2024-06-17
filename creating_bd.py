@@ -10,7 +10,8 @@ async def creating_db():
                     username TEXT,
                     minuses INTEGER,
                     bithday_date TEXT,
-                    payed INTEGER default 0
+                    payed INTEGER default 0,
+                    time_register DATETIME default CURRENT_TIMESTAMP,
                     )''')
     await db.commit()
     await db.close()
@@ -82,7 +83,11 @@ async def pre_buy_status(id_tg, status):
     
 async def update_status(id_tg, status):
     db = await aiosqlite.connect(db_path)
-    await db.execute('''UPDATE users SET status = ? WHERE id_tg = ?''', (status, id_tg))
+    if status == 9:
+        payed = 1
+    else:
+        payed = 0
+    await db.execute('''UPDATE users SET status = ?, payed = ? WHERE id_tg = ?''', (status, payed, id_tg))
     await db.commit()
     await db.close()
 

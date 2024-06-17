@@ -44,6 +44,7 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     ContextTypes,
+    ConversationHandler
 )
 from telegram.constants import ParseMode
 
@@ -307,6 +308,9 @@ async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    status = 8
+    await update_status(update.effective_user.id, status)
+
     url = await yookassa_payment(context)
     keyboard = [
         [InlineKeyboardButton("Оплата через ЮКассу", url=url)],
@@ -343,15 +347,25 @@ async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYP
     return CONFIRMATION_PAYMENT
 
 async def chek_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton("Повторить операцию оплаты", callback_data="ready"), InlineKeyboardButton("Обратиться в поддержку", url="https://t.me/yur_numer")]]
+    keyboard = [[ InlineKeyboardButton("Обратиться в поддержку", url="https://t.me/yur_numer")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="К сожалению мы не смогли подтвердить оплату, вы можете повторить попытку или написать в поддержку",
+        text="К сожалению мы не смогли подтвердить оплату, вы можете написать в поддержку",
         reply_markup=reply_markup,
     )
-    return CHEK_PAYMENT
 
+async def success_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[ InlineKeyboardButton("Написать мне", url="https://t.me/yur_numer")]]
+    status = 9
+    await update_status(update.effective_user.id, status)
+    
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Поздравляю с оплатой, напишите мне и я состалю для вас инструкцию по прохождению из - в +",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+    return ConversationHandler.END
 
 
 
