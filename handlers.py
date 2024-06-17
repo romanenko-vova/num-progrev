@@ -64,12 +64,13 @@ logger = logging.getLogger(__name__)
     GET_MINUSES,
     GET_MONEY_CODE,
     PREPARE_BUY_MESSAGE,
+    CREATE_PAYMENT,
     BUY,
     ADMIN_START,
     GET_MAILING_MESSAGE,
     YOU_SURE,
     CONFIRMATION_PAYMENT,
-) = range(1, 12)
+) = range(1, 13)
 
 admin_list = ["yur_numer", "fromanenko_vova"]
 TEST = True
@@ -285,15 +286,8 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     status = 7
     await update_status(update.effective_user.id, status)
-    url = await yookassa_payment()
     keyboard = [
-        [
-            InlineKeyboardButton(
-                "Оплатить",
-                url=url,
-                callback_data="pay_now"
-            )
-        ],
+        [InlineKeyboardButton("Оплатить", callback_data="pay_now")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -305,7 +299,24 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN_V2,
     )
-    return BUY
+    return CREATE_PAYMENT
+
+
+async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    url = await yookassa_payment(context)
+    keyboard = [
+        [InlineKeyboardButton("Оплата через ЮКассу", url=url)],
+    ]
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Ваша ссылка на оплату:\n\n_После оплаты обязательно вернитесь в бот для подтверждения_",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+    return await confirmation_payment(update, context)
 
 async def buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -314,8 +325,7 @@ async def buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await confirmation_payment(update, context)
 
 async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    await asyncio.sleep(5)
     keyboard = [
         [
             InlineKeyboardButton(
@@ -427,11 +437,11 @@ async def get_confirmation_mailing_message(
             )
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text='Сообщения успешно отправлены',
+            text="Сообщения успешно отправлены",
         )
     elif query.data == "not_sure":
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text='Отменено',
+            text="Отменено",
         )
     return await start(update, context)
