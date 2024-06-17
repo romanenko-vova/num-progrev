@@ -25,7 +25,7 @@ from handlers import (
     get_money_code,
     pre_buy_message,
     admin_choice,
-    confirmation_payment,
+    buy_callback,
     get_mailing_message,
     get_confirmation_mailing_message
 )
@@ -71,7 +71,7 @@ def main():
                 CallbackQueryHandler(get_money_code),
             ],
             PREPARE_BUY_MESSAGE: [CallbackQueryHandler(pre_buy_message)],
-            BUY: [CallbackQueryHandler(confirmation_payment)],
+            BUY: [CallbackQueryHandler(buy_callback)],
             ADMIN_START: [
                 MessageHandler(filters.TEXT, admin_choice),
             ],

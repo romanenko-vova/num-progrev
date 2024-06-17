@@ -307,6 +307,11 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return BUY
 
+async def buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await asyncio.sleep(10)
+    return await confirmation_payment(update, context)
 
 async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
