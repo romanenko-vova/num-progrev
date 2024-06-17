@@ -14,7 +14,7 @@ from texts import (
     arkans_dict,
 )
 
-from payments import yookassa_payment, yookassa_confirmation
+from payments import yookassa_payment
 
 from creating_bd import (
     add_user,
@@ -70,7 +70,8 @@ logger = logging.getLogger(__name__)
     GET_MAILING_MESSAGE,
     YOU_SURE,
     CONFIRMATION_PAYMENT,
-) = range(1, 13)
+    CHEK_PAYMENT,
+) = range(1, 14)
 
 admin_list = ["yur_numer", "fromanenko_vova"]
 TEST = True
@@ -340,6 +341,18 @@ async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYP
         reply_markup=reply_markup,
     )
     return CONFIRMATION_PAYMENT
+
+async def chek_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[InlineKeyboardButton("Повторить операцию оплаты", callback_data="ready"), InlineKeyboardButton("Обратиться в поддержку", url="https://t.me/yur_numer")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="К сожалению мы не смогли подтвердить оплату, вы можете повторить попытку или написать в поддержку",
+        reply_markup=reply_markup,
+    )
+    return CHEK_PAYMENT
+
+
 
 
 async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
