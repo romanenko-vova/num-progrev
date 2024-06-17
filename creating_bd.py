@@ -11,7 +11,7 @@ async def creating_db():
                     minuses INTEGER,
                     bithday_date TEXT,
                     payed INTEGER default 0,
-                    time_register DATETIME default CURRENT_TIMESTAMP,
+                    time_register DATETIME default CURRENT_TIMESTAMP
                     )''')
     await db.commit()
     await db.close()

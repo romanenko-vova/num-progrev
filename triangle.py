@@ -6,7 +6,10 @@ import math
 async def calc_arkans(date):
     # первый ряд
     nums_lst = date.split(".")
-    sum_day = sum([int(num) for num in nums_lst[0]])
+    if int(nums_lst[0]) > 22:
+        sum_day = sum([int(num) for num in nums_lst[0]])
+    else:
+        sum_day = int(nums_lst[0])
     sum_month = int(nums_lst[1])
     sum_year = sum([int(num) for num in nums_lst[2]])
     if sum_year > 22:

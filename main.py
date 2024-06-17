@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 def main():
     date_regex = r"^(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[012])\.(1|2)\d{3}$|^(0?[1-9]|[12][0-9])\.(0?[1-9]|1[012])\.(1|2)\d{3}$"
 
-    application = ApplicationBuilder().token("7227890712:AAHu_PD1uaY5Kkh-oK-sgJIwQhs0QbPRkGk").build()
+    application = ApplicationBuilder().token(os.getenv('TOKEN')).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
