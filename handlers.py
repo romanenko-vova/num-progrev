@@ -12,6 +12,7 @@ from texts import (
     affirmative_message_dict,
     pre_buy_message_dict,
     arkans_dict,
+    progrev_messages,
 )
 
 from payments import yookassa_payment
@@ -27,6 +28,7 @@ from creating_bd import (
     pre_buy_status,
     calculate_conversion,
     get_bithday_date,
+    get_users_to_progrev,
 )
 from triangle import (
     calc_money_code,
@@ -44,7 +46,7 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     ContextTypes,
-    ConversationHandler
+    ConversationHandler,
 )
 from telegram.constants import ParseMode
 
@@ -118,6 +120,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.MARKDOWN_V2,
         )
         return GET_DATE
+    
+async def send_warning(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="*Пожалуйста, введите дату рождения в формате дд.мм.гггг*",
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
+    return GET_DATE
 
 
 async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -323,11 +333,13 @@ async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return await confirmation_payment(update, context)
 
+
 async def buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await asyncio.sleep(10)
     return await confirmation_payment(update, context)
+
 
 async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await asyncio.sleep(5)
@@ -346,8 +358,11 @@ async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYP
     )
     return CONFIRMATION_PAYMENT
 
+
 async def chek_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[ InlineKeyboardButton("Обратиться в поддержку", url="https://t.me/yur_numer")]]
+    keyboard = [
+        [InlineKeyboardButton("Обратиться в поддержку", url="https://t.me/yur_numer")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -355,11 +370,12 @@ async def chek_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup,
     )
 
+
 async def success_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[ InlineKeyboardButton("Написать мне", url="https://t.me/yur_numer")]]
+    keyboard = [[InlineKeyboardButton("Написать мне", url="https://t.me/yur_numer")]]
     status = 9
     await update_status(update.effective_user.id, status)
-    
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Поздравляю с оплатой, напишите мне и я состалю для вас инструкцию по прохождению из - в +",
@@ -367,6 +383,14 @@ async def success_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
+
+async def send_progrev_message(context: ContextTypes.DEFAULT_TYPE):
+    users_list = await get_users_to_progrev()
+    for user in users_list:
+        await context.bot.send_message(
+            chat_id=user[0],
+            text=progrev_messages[user[1]],
+        )
 
 
 async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):

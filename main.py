@@ -29,7 +29,8 @@ from handlers import (
     buy_callback,
     get_mailing_message,
     get_confirmation_mailing_message,
-    create_payment
+    create_payment,
+    send_warning
 )
 from telegram import Update
 from telegram.ext import (
@@ -65,6 +66,7 @@ def main():
         states={
             GET_DATE: [
                 MessageHandler(filters.Regex(date_regex), get_date),
+                MessageHandler(filters.TEXT, send_warning)
             ],
             READY_TRIANGLE: [CallbackQueryHandler(send_triangle)],
             READY_ARKANES: [CallbackQueryHandler(send_arkanes)],
