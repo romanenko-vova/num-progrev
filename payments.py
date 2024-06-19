@@ -46,18 +46,20 @@ async def yookassa_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
 
-    await asyncio.sleep(5)
-    if not context.user_data['check_message']:
+    if not context.user_data.get('check_message'):
         check_message = await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Проверяю оплату..."
         )
-
-    payment = context.user_data.get("payment")
+        context.user_data['check_message'] = check_message   
+    else:
+        await asyncio.sleep(5)     
 
     if not context.user_data.get("counter"):
         context.user_data["counter"] = 0
+        
     counter = context.user_data["counter"]
-    context.user_data['check_message'] = check_message
+    payment = context.user_data.get("payment")
+    
     payment = Payment.find_one(payment.id)
     if payment:
         if counter < 6:

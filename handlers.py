@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-
+import datetime
 import dotenv
 from texts import (
     hello_message,
@@ -24,6 +24,7 @@ from creating_bd import (
     calculate_30_procents,
     add_arkans,
     get_users_list,
+    get_payment_status,
     update_status,
     pre_buy_status,
     calculate_conversion,
@@ -66,6 +67,8 @@ logger = logging.getLogger(__name__)
     READY_ARKANES,
     GET_MINUSES,
     GET_MONEY_CODE,
+    PREPREPARE_BUY_MESSAGE,
+    PREREADY_BUY_MESSAGE,
     PREPARE_BUY_MESSAGE,
     CREATE_PAYMENT,
     BUY,
@@ -74,14 +77,14 @@ logger = logging.getLogger(__name__)
     YOU_SURE,
     CONFIRMATION_PAYMENT,
     CHEK_PAYMENT,
-) = range(1, 14)
+) = range(1, 16)
 
 admin_list = ["yur_numer", "fromanenko_vova"]
-TEST = True
+TEST = False
 if TEST:
     arkans_delay = 2
 else:
-    arkans_delay = 60
+    arkans_delay = 15
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -120,13 +123,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.MARKDOWN_V2,
         )
         return GET_DATE
-    
+
+
 async def send_warning(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="*Пожалуйста, введите дату рождения в формате дд.мм.гггг*",
-            parse_mode=ParseMode.MARKDOWN_V2,
-        )
+        chat_id=update.effective_chat.id,
+        text="*Пожалуйста\, введите дату рождения в формате дд\.мм\.гггг*",
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
     return GET_DATE
 
 
@@ -158,7 +162,6 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(inline_keyboard),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
-
     status = 2
     await update_status(update.effective_user.id, status)
     return READY_TRIANGLE
@@ -169,8 +172,9 @@ async def send_triangle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with open(file_path, "rb") as file:
         await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file)
 
+    await asyncio.sleep(5)
     inline_keyboard = [
-        [InlineKeyboardButton("Готов считать", callback_data="ready_arkanes")]
+        [InlineKeyboardButton("Получить расшифровку", callback_data="ready_arkanes")]
     ]
 
     await context.bot.send_message(
@@ -191,6 +195,7 @@ async def send_arkanes(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     inline_keyboard = [
         [
+            InlineKeyboardButton("0", callback_data="1min"),
             InlineKeyboardButton("1", callback_data="1min"),
             InlineKeyboardButton("2", callback_data="2min"),
             InlineKeyboardButton("3", callback_data="3min"),
@@ -243,18 +248,16 @@ async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=text_parse_mode(send_procents_message_dict[dict_key]),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
-    await asyncio.sleep(2)
+    await asyncio.sleep(7)
     return await affirmative_message(update, context)
 
 
 async def affirmative_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("Да", callback_data="ready")]]
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=affirmative_message_dict[1]
-    )
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=text_parse_mode(affirmative_message_dict[0]),
+        text=text_parse_mode(affirmative_message_dict[1]),
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=keyboard,
         ),
@@ -273,20 +276,59 @@ async def get_money_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     money_code = calc_money_code(birthday_date)
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"Ваш денежный код: {money_code}",
-    )
     status = 6
     await update_status(update.effective_user.id, status)
 
     keyboard = [
         [InlineKeyboardButton("Как это сделать?", callback_data="ready_to_buy")]
     ]
+    # await asyncio.sleep(1)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=text_parse_mode(pre_buy_message_dict[0]),
+        text=f"*Ваш денежный код\: __{money_code}__*\n\n"
+        + text_parse_mode(pre_buy_message_dict[0]),
         reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+    return PREPREPARE_BUY_MESSAGE
+
+
+async def preprepare_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "Из чего состоит эта расшифровка?", callback_data="prepre_buy_message"
+            )
+        ],
+    ]
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=text_parse_mode(pre_buy_message_dict[1]),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+    return PREREADY_BUY_MESSAGE
+
+
+async def preready_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    keyboard = [
+        [InlineKeyboardButton("ДА!", callback_data="ready_to_pay")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # await asyncio.sleep(1)
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=text_parse_mode(pre_buy_message_dict[2]),
+        reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN_V2,
     )
     return PREPARE_BUY_MESSAGE
@@ -299,7 +341,7 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status = 7
     await update_status(update.effective_user.id, status)
     keyboard = [
-        [InlineKeyboardButton("Оплатить", callback_data="pay_now")],
+        [InlineKeyboardButton("Получить ссылку на оплату", callback_data="pay_now")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -307,9 +349,14 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=text_parse_mode(pre_buy_message_dict[1]),
+        text=text_parse_mode(pre_buy_message_dict[3]),
         reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN_V2,
+    )
+    context.job_queue.run_once(
+        notify_to_pay,
+        when=datetime.timedelta(minutes=1),
+        chat_id=update.effective_user.id,
     )
     return CREATE_PAYMENT
 
@@ -323,26 +370,21 @@ async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     url = await yookassa_payment(context)
     keyboard = [
-        [InlineKeyboardButton("Оплата через ЮКассу", url=url)],
+        [InlineKeyboardButton("Оплатить удобным способом", url=url)],
     ]
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Ваша ссылка на оплату:\n\n_После оплаты обязательно вернитесь в бот для подтверждения_",
+        text="*Ваша ссылка на оплату*\n\n_После оплаты обязательно вернитесь в бот для подтверждения_",
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
     return await confirmation_payment(update, context)
 
 
-async def buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    await asyncio.sleep(10)
-    return await confirmation_payment(update, context)
-
-
-async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await asyncio.sleep(5)
+    await asyncio.sleep(30)
     keyboard = [
         [
             InlineKeyboardButton(
@@ -353,7 +395,7 @@ async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYP
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=pre_buy_message_dict[1],
+        text="Нажмите кнопку для подтверждения оплаты",
         reply_markup=reply_markup,
     )
     return CONFIRMATION_PAYMENT
@@ -371,6 +413,28 @@ async def chek_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def notify_to_pay(context: ContextTypes.DEFAULT_TYPE, chat_id=None):
+    if not chat_id:
+        job = context.job
+        chat_id = job.chat_id
+    if await get_payment_status(chat_id) == 0:
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "Получить ссылку на оплату", callback_data="pay_now"
+                )
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text_parse_mode(pre_buy_message_dict[4]),
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
+
+
 async def success_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("Написать мне", url="https://t.me/yur_numer")]]
     status = 9
@@ -378,9 +442,14 @@ async def success_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Поздравляю с оплатой, напишите мне и я состалю для вас инструкцию по прохождению из - в +",
+        text=text_parse_mode(
+            "*Спасибо за оплату!*\n\nНапишите мне и я состалю для вас инструкцию по прохождению из - в +"
+        ),
         reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2,
     )
+    # await context.bot.send_message(chat_id=492082141, text=f"@{update.effective_user.username} оплатил только что")
+    context.user_data.clear()
     return ConversationHandler.END
 
 
@@ -389,7 +458,8 @@ async def send_progrev_message(context: ContextTypes.DEFAULT_TYPE):
     for user in users_list:
         await context.bot.send_message(
             chat_id=user[0],
-            text=progrev_messages[user[1]],
+            text=text_parse_mode(progrev_messages[user[1]]),
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
 
 

@@ -22,7 +22,7 @@ async def calc_arkans(date):
     # второй ряд
     num4 = sum_day + sum_month
     if num4 > 22:
-        num4 = sum[[int(num) for num in str(num4)]]
+        num4 = sum([int(num) for num in str(num4)])
     if sum_year > 9:
         num5 = sum([int(num) for num in str(sum_year)])
     else:

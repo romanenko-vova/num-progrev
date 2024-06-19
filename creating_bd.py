@@ -14,7 +14,7 @@ async def creating_db():
                     bithday_date TEXT,
                     payed INTEGER default 0,
                     time_register DATETIME default CURRENT_TIMESTAMP,
-                    num_progrev INTEGER default 0,
+                    num_progrev INTEGER default 0
                     )""")
     await db.commit()
     await db.close()
@@ -53,6 +53,15 @@ async def get_bithday_date(id_tg):
     birthday_date = await result.fetchone()[0]
     await db.close()
     return birthday_date
+
+
+async def get_payment_status(id_tg):
+    db = await aiosqlite.connect(db_path)
+    result = await db.execute("""SELECT payed FROM users WHERE id_tg = ?""", (id_tg,))
+    payed = await result.fetchone()
+    payed = payed[0]
+    await db.close()
+    return payed
 
 
 async def add_minuses(id_tg, minuses, status):
