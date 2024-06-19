@@ -355,7 +355,7 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     context.job_queue.run_once(
         notify_to_pay,
-        when=datetime.timedelta(minutes=1),
+        when=datetime.timedelta(minutes=15),
         chat_id=update.effective_user.id,
     )
     return CREATE_PAYMENT
