@@ -248,7 +248,7 @@ async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=text_parse_mode(send_procents_message_dict[dict_key]),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
-    await asyncio.sleep(7)
+    await asyncio.sleep(5)
     return await affirmative_message(update, context)
 
 
