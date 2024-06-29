@@ -14,12 +14,15 @@ from telegram.ext import (
     ContextTypes,
 )
 import asyncio
+import os
+from dotenv import load_dotenv
 
-Configuration.account_id = "349918"
-Configuration.secret_key = "test_wwHRVzc1JTXUJhM5Wh9lV65VCFtc4iG2ryM0bKJ6SUw"
-
+load_dotenv()
 
 async def yookassa_payment(context: ContextTypes.DEFAULT_TYPE):
+    Configuration.account_id = os.getenv('SHOP_ID')
+    Configuration.secret_key = os.getenv('SECRET_KEY_YOUKASSA')
+    phone = context.user_data.get('phone')
     payment_process = Payment.create(
         {
             "amount": {"value": "1990.00", "currency": "RUB"},
@@ -28,7 +31,18 @@ async def yookassa_payment(context: ContextTypes.DEFAULT_TYPE):
                 "return_url": "https://t.me/yur_numer_bot",
             },
             "capture": True,
-            "description": "Заказ №1",
+            "description": 'Программа "Из минуса в плюс"',
+            "receipt": {
+                "customer": {"phone": f"{phone}"},
+                "items": [
+                    {
+                        "description": 'Программа "Из минуса в плюс"',
+                        "quantity": "1",
+                        "amount": {"value": "1990.00", "currency": "RUB"},
+                        "vat_code": "1",
+                    },
+                ],
+            },
         },
         uuid.uuid4(),
     )
@@ -46,26 +60,31 @@ async def yookassa_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
 
-    if not context.user_data.get('check_message'):
+    if not context.user_data.get("check_message"):
         check_message = await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Проверяю оплату..."
         )
-        context.user_data['check_message'] = check_message   
+        context.user_data["check_message"] = check_message
     else:
-        await asyncio.sleep(5)     
+        await asyncio.sleep(5)
 
     if not context.user_data.get("counter"):
         context.user_data["counter"] = 0
-        
+
     counter = context.user_data["counter"]
     payment = context.user_data.get("payment")
-    
+
     payment = Payment.find_one(payment.id)
     if payment:
         if counter < 6:
             if payment.status == "succeeded":
                 from handlers import success_payment
-                await context.bot.edit_message_text('Оплата прошла успешно ✅', chat_id=check_message.chat.id, message_id=check_message.id)
+
+                await context.bot.edit_message_text(
+                    "Оплата прошла успешно ✅",
+                    chat_id=check_message.chat.id,
+                    message_id=check_message.id,
+                )
                 return await success_payment(update, context)
             else:
                 counter += 1
@@ -73,6 +92,7 @@ async def yookassa_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
                 return await yookassa_confirmation(update, context)
         else:
             import handlers
+
             return await handlers.chek_payment(update, context)
     else:
         return await yookassa_confirmation(update, context)

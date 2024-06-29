@@ -6,6 +6,7 @@ import dotenv
 from texts import (
     hello_message,
     hello_message2,
+    hello_message3,
     before_triangle_message,
     before_arkan_message,
     send_procents_message_dict,
@@ -30,6 +31,8 @@ from creating_bd import (
     calculate_conversion,
     get_bithday_date,
     get_users_to_progrev,
+    update_num_progrev,
+    update_phone,
 )
 from triangle import (
     calc_money_code,
@@ -42,6 +45,8 @@ from telegram import (
     ReplyKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -70,6 +75,7 @@ logger = logging.getLogger(__name__)
     PREPREPARE_BUY_MESSAGE,
     PREREADY_BUY_MESSAGE,
     PREPARE_BUY_MESSAGE,
+    GET_PHONE_NUMBER,
     CREATE_PAYMENT,
     BUY,
     ADMIN_START,
@@ -77,7 +83,7 @@ logger = logging.getLogger(__name__)
     YOU_SURE,
     CONFIRMATION_PAYMENT,
     CHEK_PAYMENT,
-) = range(1, 16)
+) = range(1, 17)
 
 admin_list = ["yur_numer", "fromanenko_vova"]
 TEST = False
@@ -115,11 +121,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.MARKDOWN_V2,
         )
 
-        await asyncio.sleep(1)
-
+        await asyncio.sleep(2)
+        with open("./imgs/message_progrev.jpeg", "rb") as image:
+            await context.bot.send_photo(
+                chat_id=update.effective_chat.id,
+                photo=image,
+                caption=text_parse_mode(hello_message2),
+                parse_mode=ParseMode.MARKDOWN_V2,
+            )
+            
+        await asyncio.sleep(5)
+        
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=text_parse_mode(hello_message2),
+            text=text_parse_mode(hello_message3),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
         return GET_DATE
@@ -168,6 +183,9 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def send_triangle(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
     file_path = context.user_data["file_path"]
     with open(file_path, "rb") as file:
         await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file)
@@ -195,7 +213,7 @@ async def send_arkanes(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     inline_keyboard = [
         [
-            InlineKeyboardButton("0", callback_data="1min"),
+            InlineKeyboardButton("0", callback_data="0min"),
             InlineKeyboardButton("1", callback_data="1min"),
             InlineKeyboardButton("2", callback_data="2min"),
             InlineKeyboardButton("3", callback_data="3min"),
@@ -341,7 +359,11 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status = 7
     await update_status(update.effective_user.id, status)
     keyboard = [
-        [InlineKeyboardButton("Получить ссылку на оплату", callback_data="pay_now")],
+        [
+            InlineKeyboardButton(
+                "Получить ссылку на оплату", callback_data="get_phone_number"
+            )
+        ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -350,6 +372,22 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=text_parse_mode(pre_buy_message_dict[3]),
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+
+    return GET_PHONE_NUMBER
+
+
+async def get_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    keyboard = [[KeyboardButton("Отправить контакт", request_contact=True)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Пожалуйста, нажмите на кнопку снизу, чтобы поделиться контактом для выставления чека ⬇️",
         reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN_V2,
     )
@@ -362,11 +400,11 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
     status = 8
     await update_status(update.effective_user.id, status)
+    phone = f"+{update.effective_message.contact.phone_number}"
+    context.user_data["phone"] = phone
+    await update_phone(update.effective_user.id, phone)
 
     url = await yookassa_payment(context)
     keyboard = [
@@ -382,9 +420,7 @@ async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def confirmation_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await asyncio.sleep(30)
+    await asyncio.sleep(20)
     keyboard = [
         [
             InlineKeyboardButton(
@@ -421,7 +457,7 @@ async def notify_to_pay(context: ContextTypes.DEFAULT_TYPE, chat_id=None):
         keyboard = [
             [
                 InlineKeyboardButton(
-                    "Получить ссылку на оплату", callback_data="pay_now"
+                    "Получить ссылку на оплату", callback_data="get_phone_number"
                 )
             ],
         ]
@@ -461,6 +497,7 @@ async def send_progrev_message(context: ContextTypes.DEFAULT_TYPE):
             text=text_parse_mode(progrev_messages[user[1]]),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
+        await update_num_progrev(user[0], user[1])
 
 
 async def admin_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):

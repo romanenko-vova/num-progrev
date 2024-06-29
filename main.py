@@ -14,6 +14,7 @@ from handlers import (
     PREPREPARE_BUY_MESSAGE,
     PREREADY_BUY_MESSAGE,
     PREPARE_BUY_MESSAGE,
+    GET_PHONE_NUMBER,
     CREATE_PAYMENT,
     CHEK_PAYMENT,
     ADMIN_START,
@@ -32,6 +33,7 @@ from handlers import (
     admin_choice,
     get_mailing_message,
     get_confirmation_mailing_message,
+    get_phone_number,
     create_payment,
     send_warning,
     send_progrev_message,
@@ -72,23 +74,43 @@ def main():
                 MessageHandler(filters.Regex(date_regex), get_date),
                 MessageHandler(filters.TEXT, send_warning),
             ],
-            READY_TRIANGLE: [CallbackQueryHandler(send_triangle)],
-            READY_ARKANES: [CallbackQueryHandler(send_arkanes)],
-            GET_MINUSES: [CallbackQueryHandler(minuses)],
+            READY_TRIANGLE: [
+                CallbackQueryHandler(send_triangle, pattern="^ready_triangle$")
+            ],
+            READY_ARKANES: [
+                CallbackQueryHandler(send_arkanes, pattern="^ready_arkanes$")
+            ],
+            GET_MINUSES: [
+                CallbackQueryHandler(
+                    minuses, pattern="^(0min|1min|2min|3min|4min|5min|6min)$"
+                )
+            ],
             GET_MONEY_CODE: [
-                CallbackQueryHandler(get_money_code),
+                CallbackQueryHandler(get_money_code, pattern="^ready$"),
             ],
-            PREPREPARE_BUY_MESSAGE: [CallbackQueryHandler(preprepare_buy_message)],
-            PREREADY_BUY_MESSAGE: [CallbackQueryHandler(preready_buy_message)],
+            PREPREPARE_BUY_MESSAGE: [
+                CallbackQueryHandler(preprepare_buy_message, pattern="^ready_to_buy$")
+            ],
+            PREREADY_BUY_MESSAGE: [
+                CallbackQueryHandler(
+                    preready_buy_message, pattern="^prepre_buy_message$"
+                )
+            ],
             PREPARE_BUY_MESSAGE: [
-                CallbackQueryHandler(pre_buy_message),
+                CallbackQueryHandler(pre_buy_message, pattern="^ready_to_pay$"),
             ],
-            CREATE_PAYMENT: [CallbackQueryHandler(create_payment, pattern="^pay_now$")],
+            GET_PHONE_NUMBER: [
+                CallbackQueryHandler(get_phone_number, pattern="^get_phone_number$")
+            ],
+            CREATE_PAYMENT: [
+                MessageHandler(filters.CONTACT, create_payment),
+                CallbackQueryHandler(get_phone_number, pattern="^get_phone_number$"),
+            ],
             CONFIRMATION_PAYMENT: [
                 CallbackQueryHandler(
-                    yookassa_confirmation, pattern="^confirmation_payment"
+                    yookassa_confirmation, pattern="^confirmation_payment$"
                 ),
-                CallbackQueryHandler(create_payment, pattern="^pay_now$"),
+                CallbackQueryHandler(get_phone_number, pattern="^get_phone_number$"),
             ],
             ADMIN_START: [
                 MessageHandler(filters.TEXT, admin_choice),
@@ -96,7 +118,11 @@ def main():
             GET_MAILING_MESSAGE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, get_mailing_message)
             ],
-            YOU_SURE: [CallbackQueryHandler(get_confirmation_mailing_message)],
+            YOU_SURE: [
+                CallbackQueryHandler(
+                    get_confirmation_mailing_message, pattern="^(i_sure|not_sure)$"
+                )
+            ],
         },
         fallbacks=[CommandHandler("start", start)],
         # per_message=True,
