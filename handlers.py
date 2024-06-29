@@ -384,7 +384,7 @@ async def get_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     keyboard = [[KeyboardButton("Отправить контакт", request_contact=True)]]
-    reply_markup = ReplyKeyboardMarkup(keyboard)
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, input_field_placeholder="Нажмите на кнопку, чтобы отправить контакт")
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Пожалуйста, нажмите на кнопку снизу, чтобы поделиться контактом для выставления чека ⬇️",
