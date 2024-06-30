@@ -37,6 +37,8 @@ from handlers import (
     create_payment,
     send_warning,
     send_progrev_message,
+    send_warning_phone,
+    load_conversation,
 )
 from telegram import Update
 from telegram.ext import (
@@ -68,7 +70,11 @@ def main():
     application = ApplicationBuilder().token(os.getenv("TOKEN")).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            MessageHandler(filters.ALL, load_conversation),
+            CallbackQueryHandler(load_conversation)
+        ],
         states={
             GET_DATE: [
                 MessageHandler(filters.Regex(date_regex), get_date),
@@ -104,6 +110,11 @@ def main():
             ],
             CREATE_PAYMENT: [
                 MessageHandler(filters.CONTACT, create_payment),
+                MessageHandler(filters.Regex("^7\d{10}$"), create_payment),
+                MessageHandler(
+                    filters.TEXT & (~filters.Regex("^7\d{10}$")) & (~filters.CONTACT),
+                    send_warning_phone,
+                ),
                 CallbackQueryHandler(get_phone_number, pattern="^get_phone_number$"),
             ],
             CONFIRMATION_PAYMENT: [
@@ -128,6 +139,7 @@ def main():
         # per_message=True,
     )
     application.job_queue.run_daily(send_progrev_message, time=datetime.time(hour=12))
+    # application.job_queue.run_once(send_progrev_message, datetime.timedelta(minutes=5))
     application.add_handler(conv_handler)
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 

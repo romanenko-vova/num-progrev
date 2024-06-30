@@ -2,3 +2,4 @@ __pycache__
 triangles
 *.db
 **/*.env
+**/*.envv

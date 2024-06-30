@@ -22,10 +22,13 @@ load_dotenv()
 async def yookassa_payment(context: ContextTypes.DEFAULT_TYPE):
     Configuration.account_id = os.getenv('SHOP_ID')
     Configuration.secret_key = os.getenv('SECRET_KEY_YOUKASSA')
-    phone = context.user_data.get('phone')
+    if context.user_data.get('phone'):
+        phone = context.user_data.get('phone')
+    price = os.getenv('PRICE')
+    # print(phone)
     payment_process = Payment.create(
         {
-            "amount": {"value": "1990.00", "currency": "RUB"},
+            "amount": {"value": f"{price}", "currency": "RUB"},
             "confirmation": {
                 "type": "redirect",
                 "return_url": "https://t.me/yur_numer_bot",
@@ -38,7 +41,7 @@ async def yookassa_payment(context: ContextTypes.DEFAULT_TYPE):
                     {
                         "description": 'Программа "Из минуса в плюс"',
                         "quantity": "1",
-                        "amount": {"value": "1990.00", "currency": "RUB"},
+                        "amount": {"value": f"{price}", "currency": "RUB"},
                         "vat_code": "1",
                     },
                 ],
@@ -66,7 +69,7 @@ async def yookassa_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         )
         context.user_data["check_message"] = check_message
     else:
-        await asyncio.sleep(5)
+        await asyncio.sleep(4)
 
     if not context.user_data.get("counter"):
         context.user_data["counter"] = 0
