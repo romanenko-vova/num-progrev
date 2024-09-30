@@ -19,12 +19,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-async def yookassa_payment(context: ContextTypes.DEFAULT_TYPE):
+async def yookassa_payment(context: ContextTypes.DEFAULT_TYPE, price_str):
     Configuration.account_id = os.getenv('SHOP_ID')
     Configuration.secret_key = os.getenv('SECRET_KEY_YOUKASSA')
     if context.user_data.get('phone'):
         phone = context.user_data.get('phone')
-    price = os.getenv('PRICE')
+    price = os.getenv(price_str)
     # print(phone)
     payment_process = Payment.create(
         {

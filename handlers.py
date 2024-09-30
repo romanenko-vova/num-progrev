@@ -7,6 +7,7 @@ from texts import (
     hello_message,
     hello_message2,
     hello_message3,
+    hello_message4,
     before_triangle_message,
     before_arkan_message,
     send_procents_message_dict,
@@ -137,11 +138,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_user.id,
             data={"i_path": "./imgs/message_progrev.jpeg", "text": hello_message2},
         )
+        
         context.job_queue.run_once(
             send_text_job,
             datetime.timedelta(seconds=7),
             chat_id=update.effective_user.id,
-            data={"text": hello_message3},
+            data={"text": hello_message3}
+        )
+        
+        context.job_queue.run_once(
+            send_text_job,
+            datetime.timedelta(seconds=20),
+            chat_id=update.effective_user.id,
+            data={"text": hello_message4},
         )
         await update_conversation_status(update.effective_user.id, GET_DATE)
         return GET_DATE
@@ -349,6 +358,7 @@ async def send_procents(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_money_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    
     await query.answer()
 
     birthday_date = context.user_data.get("birthday_date")
@@ -382,7 +392,7 @@ async def preprepare_buy_message(update: Update, context: ContextTypes.DEFAULT_T
     keyboard = [
         [
             InlineKeyboardButton(
-                "Из чего состоит эта расшифровка?", callback_data="prepre_buy_message"
+                "Дальше", callback_data="prepre_buy_message"
             )
         ],
     ]
@@ -441,9 +451,10 @@ async def pre_buy_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup,
         parse_mode=ParseMode.MARKDOWN_V2,
     )
+    context.user_data['payment_str'] = 'PRICE_1'
     context.job_queue.run_once(
         notify_to_pay,
-        when=datetime.timedelta(minutes=30),
+        when=datetime.timedelta(hours=1),
         chat_id=update.effective_user.id,
     )
     await update_conversation_status(update.effective_user.id, GET_PHONE_NUMBER)
@@ -491,7 +502,7 @@ async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["phone"] = phone
     await update_phone(update.effective_user.id, phone)
 
-    url = await yookassa_payment(context)
+    url = await yookassa_payment(context, context.user_data['payment_str'])
     keyboard = [
         [InlineKeyboardButton("Оплатить удобным способом", url=url)],
     ]
@@ -510,7 +521,7 @@ async def create_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN_V2,
     )
     
-    context.job_queue.run_once(confirmation_payment, datetime.timedelta(seconds=15), chat_id=update.effective_user.id)
+    context.job_queue.run_once(confirmation_payment, datetime.timedelta(seconds=30), chat_id=update.effective_user.id)
     await update_conversation_status(update.effective_user.id, CONFIRMATION_PAYMENT)
     return CONFIRMATION_PAYMENT
 
@@ -558,6 +569,7 @@ async def notify_to_pay(context: ContextTypes.DEFAULT_TYPE, chat_id=None):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
+        context.user_data['payment_str'] = "PRICE_2"
         await context.bot.send_message(
             chat_id=chat_id,
             text=text_parse_mode(pre_buy_message_dict[4]),
